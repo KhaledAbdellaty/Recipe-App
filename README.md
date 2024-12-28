@@ -8,7 +8,7 @@ Welcome to the **Recipe Sharing App**! This project enables users to create, vie
 - **Recipe Feed:** Browse recipes with images, likes, and comments.
 - **Recipe Creation:** Add recipes with title, categories,ingredients, instructions, and an  image.
 - **Star Rating Widget:** Rate recipes and see average ratings.
-- **Push Notifications:** Receive updates for interactions like comments or likes. (not implemented yet )
+- **Push Notifications:** Receive updates for interactions like comments or likes.
 
 ## Prerequisites
 
@@ -36,6 +36,7 @@ dependencies:
   flutter_bloc: ^8.1.6
   flutter_rating_bar: ^4.0.1
   get_it: ^8.0.3
+  http: ^1.2.2
   image_picker: null
   like_button: ^2.0.5
   shared_preferences: null
