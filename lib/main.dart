@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:recipe_app/core/services/notification/notification_service.dart';
 import 'package:recipe_app/core/utils/router.dart';
 import 'package:recipe_app/features/auth/presentation/logic/auth_cubit/auth_cubit.dart';
 import 'core/di/injection_container.dart' as di;
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await NotificationService.instance.initialize();
   await di.init();
   runApp(const MyApp());
 }

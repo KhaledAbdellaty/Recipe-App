@@ -12,12 +12,9 @@ import 'package:recipe_app/features/recipes/data/datasources/recipe_local_dataso
 import 'package:recipe_app/features/recipes/data/datasources/recipe_remote_datasource.dart';
 import 'package:recipe_app/features/recipes/data/repositories/recipe_repository_impl.dart';
 import 'package:recipe_app/features/recipes/domain/repositories/recipe_repository.dart';
-import 'package:recipe_app/features/recipes/domain/usecases/create_recipe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/notification_service.dart';
+import '../services/notification/notification_service.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
-import '../../features/recipes/domain/usecases/get_recipes.dart';
-import '../../features/recipes/domain/usecases/rate_recipe.dart';
 
 final sl = GetIt.instance;
 
@@ -31,7 +28,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseMessaging.instance);
-  sl.registerLazySingleton(() => NotificationService(sl(), sl()));
+  sl.registerLazySingleton(() => NotificationService.instance);
 
   // Local Data Sources
   sl.registerLazySingleton<AuthLocalDataSource>(
@@ -53,19 +50,5 @@ Future<void> init() async {
     () => RecipeRepositoryImpl.instance,
   );
 
-  // Use Cases
-  sl.registerLazySingleton(() => CreateRecipeUseCase.instance);
-  sl.registerLazySingleton(() => GetRecipesUseCase.instance);
-  sl.registerLazySingleton(() => RateRecipe(sl()));
 
-  // Cubits
-  // sl.registerFactory(
-  //   () => RecipeCubit(
-  //     createRecipe: sl(),
-  //     getRecipes: sl(),
-  //     rateRecipe: sl(),
-  //   ),
-  // );
-
-  // Previous registrations...
 }

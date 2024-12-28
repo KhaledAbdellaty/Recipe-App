@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:like_button/like_button.dart';
+import 'package:recipe_app/core/presentation/widgets/star_rating.dart';
 import 'package:recipe_app/features/recipes/presentation/cubit/recipe_cubit.dart';
 import '../../domain/entities/recipe.dart';
 
@@ -75,21 +76,19 @@ class RecipeCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            size: 16,
-                            color: Colors.amber,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            recipe.averageRating.toStringAsFixed(1),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
+                    Column(
+                      children: [
+                        StarRating(
+                          rating: recipe.totalRatings.toDouble(),
+                          isInteractive: true,
+                          onRatingUpdate: (rating) =>
+                              cubit.rateRecipe(recipe.id, rating),
+                        ),
+                        Text(
+                          recipe.averageRating.toStringAsFixed(1),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ],
                 ),

@@ -29,7 +29,7 @@ class RouteManager {
         );
       case "/create_recipe":
         return MaterialPageRoute(
-          builder: (context) => CreateRecipeScreen(),
+          builder: (context) => const CreateRecipeScreen(),
         );
     }
     return null;

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:recipe_app/core/services/notification/notification_service.dart';
 import 'package:recipe_app/core/usecases/pick_image.dart';
 import 'package:recipe_app/core/usecases/upload_image.dart';
 import 'package:recipe_app/features/auth/domain/entities/user.dart';
@@ -13,8 +14,10 @@ import 'package:recipe_app/features/recipes/domain/usecases/delete_comment.dart'
 import 'package:recipe_app/features/recipes/domain/usecases/edit_comment.dart';
 import 'package:recipe_app/features/recipes/domain/usecases/get_favorite.dart';
 import 'package:recipe_app/features/recipes/domain/usecases/like_recipe.dart';
+import 'package:recipe_app/features/recipes/domain/usecases/rate_recipe.dart';
 import 'package:recipe_app/features/recipes/domain/usecases/toggle_favorite.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/services/notification/notification_type.dart';
 import '../../domain/entities/comment.dart';
 import '../../domain/entities/recipe.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,6 +38,9 @@ class RecipeCubit extends Cubit<RecipeState> {
   final _toggleFavorite = ToggleFavoriteUseCase.instance;
   final _getFavorite = GetFavoritesUseCase.instance;
   final _updateProfile = UpdateProfileUseCase.instance;
+  final _rateRecipe = RateRecipeUseCase.instance;
+
+  final _notificationService = NotificationService.instance;
 
   XFile? imageFile;
   RecipeCubit() : super(RecipeInitial());
@@ -52,6 +58,7 @@ class RecipeCubit extends Cubit<RecipeState> {
   List<Comment> comments = [];
   final userLikes = [];
   User? user;
+
   Future<void> loadRecipes(BuildContext context, {String? category}) async {
     user ??= AuthCubit.of(context).user;
     emit(RecipeLoading());
@@ -124,6 +131,45 @@ class RecipeCubit extends Cubit<RecipeState> {
     });
   }
 
+  Future<void> rateRecipe(String recipeId, double rating) async {
+    final currentState = state;
+    if (currentState is RecipeLoaded) {
+      final result = await _rateRecipe(RateRecipeParams(
+        recipeId: recipeId,
+        rating: rating,
+      ));
+
+      result.fold(
+        (failure) => emit(RecipeError(failure.message)),
+        (_) async {
+          final updatedRecipes = currentState.recipes.map((recipe) {
+            if (recipe.id == recipeId) {
+              final newTotalRatings = recipe.totalRatings + 1;
+              final newAverageRating =
+                  ((recipe.averageRating * recipe.totalRatings) + rating) /
+                      newTotalRatings;
+
+              return recipe.copyWith(
+                averageRating: newAverageRating,
+                totalRatings: newTotalRatings,
+              );
+            }
+            return recipe;
+          }).toList();
+          final recipe =
+              currentState.recipes.firstWhere((r) => r.id == recipeId);
+          await _notificationService.sendRecipeNotification(
+            recipeId: recipeId,
+            authorId: recipe.userId,
+            type: NotificationType.rating,
+            triggerUserId: user!.id,
+          );
+          emit(RecipeLoaded(updatedRecipes));
+        },
+      );
+    }
+  }
+
   Future<void> toggleLike(BuildContext context, String recipeId) async {
     final currentState = state;
     if (currentState is RecipeLoaded) {
@@ -134,7 +180,17 @@ class RecipeCubit extends Cubit<RecipeState> {
 
       result.fold(
         (failure) => emit(RecipeError(failure.message)),
-        (_) => null,
+        (_) async {
+          final recipe =
+              currentState.recipes.firstWhere((r) => r.id == recipeId);
+          // Send notification to recipe author
+          await _notificationService.sendRecipeNotification(
+            recipeId: recipeId,
+            authorId: recipe.userId,
+            type: NotificationType.like,
+            triggerUserId: user!.id,
+          );
+        },
       );
     }
   }
@@ -200,7 +256,7 @@ class RecipeCubit extends Cubit<RecipeState> {
       ));
       result.fold(
         (failure) => emit(RecipeError(failure.message)),
-        (newComment) {
+        (newComment) async {
           final updatedRecipes = currentState.recipes.map((recipe) {
             if (recipe.id == recipeId) {
               return recipe.copyWith(
@@ -209,6 +265,17 @@ class RecipeCubit extends Cubit<RecipeState> {
             }
             return recipe;
           }).toList();
+          final recipe =
+              currentState.recipes.firstWhere((r) => r.id == recipeId);
+
+          // Send notification to recipe author
+          await _notificationService.sendRecipeNotification(
+            recipeId: recipeId,
+            authorId: recipe.userId,
+            type: NotificationType.comment,
+            triggerUserId: user!.id,
+            content: content,
+          );
           emit(RecipeLoaded(updatedRecipes));
         },
       );
